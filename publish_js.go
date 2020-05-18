@@ -2,7 +2,7 @@
 
 package oak
 
-import "golang.org/x/exp/shiny/screen"
+import "github.com/oakmound/shiny/screen"
 
 var (
 	drawLoopPublishDef = func(tx screen.Texture) {

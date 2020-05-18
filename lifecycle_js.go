@@ -11,14 +11,16 @@ import (
 	"github.com/oakmound/oak/v2/event"
 	omouse "github.com/oakmound/oak/v2/mouse"
 	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/scene"
 	"github.com/oakmound/oak/v2/timing"
-	"golang.org/x/exp/shiny/screen"
+	"github.com/oakmound/shiny/screen"
 )
 
 var (
-	winBuffer     screen.Buffer
+	winBuffer     screen.Image
 	screenControl screen.Screen
 	windowControl screen.Window
+	firstSceneJs  string
 )
 
 func lifecycleLoop(inScreen screen.Screen) {
@@ -32,7 +34,7 @@ func lifecycleLoop(inScreen screen.Screen) {
 	// The window buffer represents the subsection of the world which is available to
 	// be shown in a window.
 	dlog.Info("Creating window buffer")
-	winBuffer, err = screenControl.NewBuffer(image.Point{ScreenWidth, ScreenHeight})
+	winBuffer, err = screenControl.NewImage(image.Point{ScreenWidth, ScreenHeight})
 	if err != nil {
 		dlog.Error(err)
 		return
@@ -41,25 +43,15 @@ func lifecycleLoop(inScreen screen.Screen) {
 	// The window controller handles incoming hardware or platform events and
 	// publishes image data to the screen.\
 	dlog.Info("Creating window controller")
-	changeWindow(ScreenWidth*conf.Screen.Scale, ScreenHeight*conf.Screen.Scale)
-
-	dlog.Info("Getting event bus")
-	eb = event.GetBus()
+	changeWindow(int32(conf.Screen.X), int32(conf.Screen.Y), ScreenWidth*conf.Screen.Scale, ScreenHeight*conf.Screen.Scale)
 
 	go drawLoop()
 	inputLoopInit()
 	var prevScene string
 
-	s, ok := sceneMap[firstScene]
-	if !ok {
-		dlog.Error("Unknown scene", firstScene)
-		panic("Unknown scene")
-	}
-	s.active = true
-	globalFirstScene = firstScene
-	CurrentScene = "loading"
+	SceneMap.CurrentScene = "loading"
 
-	result := new(SceneResult)
+	result := new(scene.Result)
 
 	dlog.Info("First Scene Start")
 
@@ -74,15 +66,15 @@ func lifecycleLoop(inScreen screen.Screen) {
 		updateScreen(0, 0)
 		useViewBounds = false
 
-		dlog.Info("Scene Start", CurrentScene)
+		dlog.Info("Scene Start", SceneMap.CurrentScene)
 		go func() {
-			dlog.Info("Starting scene in goroutine", CurrentScene)
-			s, ok := sceneMap[CurrentScene]
+			dlog.Info("Starting scene in goroutine", SceneMap.CurrentScene)
+			s, ok := SceneMap.GetCurrent()
 			if !ok {
-				dlog.Error("Unknown scene", CurrentScene)
+				dlog.Error("Unknown scene", SceneMap.CurrentScene)
 				panic("Unknown scene")
 			}
-			s.start(prevScene, result.NextSceneInput)
+			s.Start(prevScene, result.NextSceneInput)
 			transitionCh <- true
 		}()
 		sceneTransition(result)
@@ -97,21 +89,27 @@ func lifecycleLoop(inScreen screen.Screen) {
 
 		dlog.Info("Looping Scene")
 		cont := true
-		logicTicker := logicTickerInit()
+		logicTicker := timing.NewDynamicTicker()
+		logicTicker.SetTick(timing.FPSToDuration(FrameRate))
+		scen, ok := SceneMap.GetCurrent()
+		if !ok {
+			dlog.Error("missing scene")
+		}
 		for cont {
-			logicLoopSingle(logicTicker)
+			<-logicTicker.C
+			logicHandler.Update()
 			inputLoopSwitch()
-			event.ResolvePendingSingle()
-			cont = sceneMap[CurrentScene].loop()
+			logicHandler.Flush()
+			cont = scen.Loop()
 			schedCt++
 			if schedCt > 100 {
 				schedCt = 0
 				runtime.Gosched()
 			}
 		}
-		dlog.Info("Scene End", CurrentScene)
+		dlog.Info("Scene End", SceneMap.CurrentScene)
 
-		prevScene = CurrentScene
+		prevScene = SceneMap.CurrentScene
 
 		// Send a signal to stop drawing
 		drawCh <- true
@@ -130,7 +128,7 @@ func lifecycleLoop(inScreen screen.Screen) {
 		// Reset transient portions of the engine
 		// We start by clearing the event bus to
 		// remove most ongoing code
-		event.ResetBus()
+		logicHandler.Reset()
 		// We follow by clearing collision areas
 		// because otherwise collision function calls
 		// on non-entities (i.e. particles) can still
@@ -145,13 +143,11 @@ func lifecycleLoop(inScreen screen.Screen) {
 
 		// Todo: Add in customizable loading scene between regular scenes
 
-		CurrentScene, result = sceneMap[CurrentScene].end()
+		SceneMap.CurrentScene, result = scen.End()
 		// For convenience, we allow the user to return nil
 		// but it gets translated to an empty result
 		if result == nil {
-			result = new(SceneResult)
+			result = new(scene.Result)
 		}
-
-		eb = event.GetBus()
 	}
 }
