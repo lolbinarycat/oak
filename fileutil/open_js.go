@@ -31,7 +31,7 @@ import (
 
 	"os"
 
-	"github.com/gopherjs/gopherjs/js"
+	"syscall/js"
 )
 
 type fileInfo struct {
@@ -77,10 +77,10 @@ func (f *file) Stat() (os.FileInfo, error) {
 
 func OpenOS(path string) (File, error) {
 	var err error
-	var content *js.Object
+	var content js.Value
 	ch := make(chan struct{})
 
-	req := js.Global.Get("XMLHttpRequest").New()
+	req := js.Global().Get("XMLHttpRequest").New()
 	req.Call("open", "GET", path, true)
 	req.Set("responseType", "arraybuffer")
 	req.Call("addEventListener", "load", func() {
@@ -103,13 +103,15 @@ func OpenOS(path string) (File, error) {
 		return nil, err
 	}
 
-	data := js.Global.Get("Uint8Array").New(content).Interface().([]uint8)
+	dataVal := js.Global().Get("Uint8Array").New(content)
+	data := make([]byte, dataVal.Get("byteLength").Int())
+	js.CopyBytesToGo(data, dataVal)
 	f := &file{bytes.NewReader(data)}
 	return f, nil
 }
 
 func Getwd() (string, error) {
-	win := js.Global.Get("window")
+	win := js.Global().Get("window")
 	loc := win.Get("location").Get("pathname").String()
 	return filepath.Dir(loc), nil
 }

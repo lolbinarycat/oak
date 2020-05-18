@@ -15,7 +15,7 @@ require (
 	github.com/hajimehoshi/wasmserve v0.0.0-20200406183927-13b76e2cdbce // indirect
 	github.com/oakmound/libudev v0.2.1
 	github.com/oakmound/oak v2.0.0+incompatible // indirect
-	github.com/oakmound/shiny v0.4.2-0.20191119030223-0bee53b02481
+	github.com/oakmound/shiny v0.4.2-0.20200518160853-9ff7184be34c
 	github.com/oakmound/w32 v2.1.0+incompatible
 	github.com/oov/directsound-go v0.0.0-20141101201356-e53e59c700bf // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -28,5 +28,3 @@ require (
 )
 
 go 1.13
-
-replace github.com/oakmound/shiny => ../shiny
