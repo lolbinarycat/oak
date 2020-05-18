@@ -5,7 +5,7 @@ package oak
 import (
 	"image"
 
-	"github.com/oakmound/oak/dlog"
+	"github.com/oakmound/oak/v2/dlog"
 	"golang.org/x/mobile/event/lifecycle"
 
 	"github.com/oakmound/shiny/screen"
@@ -31,6 +31,10 @@ func lifecycleLoop(s screen.Screen) {
 		dlog.Error(err)
 		return
 	}
+
+	// Next time:
+	// Right here, query the backing scale factor of the physical screen
+	// Apply that factor to the scale
 
 	dlog.Info("Creating window controller")
 	changeWindow(int32(conf.Screen.X), int32(conf.Screen.Y), ScreenWidth*conf.Screen.Scale, ScreenHeight*conf.Screen.Scale)

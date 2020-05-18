@@ -1,6 +1,6 @@
 // Copyright 2012 Daniel Connelly.  All rights reserved.
 // Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// license that can be found in the rtree-LICENSE file.
 
 package collision
 
@@ -9,7 +9,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/oakmound/oak/alg/floatgeom"
+	"github.com/oakmound/oak/v2/alg/floatgeom"
 )
 
 // Rtree represents an R-tree, a balanced search tree for storing and querying
@@ -22,12 +22,17 @@ type Rtree struct {
 	height      int
 }
 
+// Size returns the rtree's size
+func (tree *Rtree) Size() int {
+	return tree.size
+}
+
 // NewTree creates a new R-tree instance.
-func newTree(MinChildren, MaxChildren int) *Rtree {
-	rt := Rtree{MinChildren: MinChildren, MaxChildren: MaxChildren}
+func newTree(minChildren, maxChildren int) *Rtree {
+	rt := Rtree{MinChildren: minChildren, MaxChildren: maxChildren}
 	rt.height = 1
 	rt.root = &node{}
-	rt.root.entries = make([]entry, 0, MaxChildren)
+	rt.root.entries = make([]entry, 0, maxChildren)
 	rt.root.leaf = true
 	rt.root.level = 1
 	return &rt
@@ -212,7 +217,7 @@ func (n *node) split(minGroupSize int) (left, right *node) {
 		remaining = append(remaining[:next], remaining[next+1:]...)
 	}
 
-	return
+	return left, right
 }
 
 func assign(e entry, group *node) {
@@ -298,18 +303,8 @@ func pickNext(left, right *node, entries []entry) (next int) {
 // Implemented per Section 3.3 of "R-trees: A Dynamic Index Structure for
 // Space Searching" by A. Guttman, Proceedings of ACM SIGMOD, p. 47-57, 1984.
 func (tree *Rtree) Delete(obj *Space) bool {
-	n := tree.findLeaf(tree.root, obj)
+	n, ind := tree.findLeaf(tree.root, obj)
 	if n == nil {
-		return false
-	}
-
-	ind := -1
-	for i, e := range n.entries {
-		if e.obj == obj {
-			ind = i
-		}
-	}
-	if ind < 0 {
 		return false
 	}
 
@@ -327,31 +322,32 @@ func (tree *Rtree) Delete(obj *Space) bool {
 	return true
 }
 
-// findLeaf finds the leaf node containing obj.
-func (tree *Rtree) findLeaf(n *node, obj *Space) *node {
+// findLeaf finds the leaf node containing obj and the index
+// within the node's entries where the obj was found
+func (tree *Rtree) findLeaf(n *node, obj *Space) (*node, int) {
 	if n.leaf {
-		return n
+		for i, leafEntry := range n.entries {
+			if leafEntry.obj == obj {
+				return n, i
+			}
+		}
+		return nil, -1
 	}
 	// if not leaf, search all candidate subtrees
 	for _, e := range n.entries {
 		if e.bb.ContainsRect(obj.Location) {
-			leaf := tree.findLeaf(e.child, obj)
+			leaf, i := tree.findLeaf(e.child, obj)
 			if leaf == nil {
 				continue
 			}
-			// check if the leaf actually contains the object
-			for _, leafEntry := range leaf.entries {
-				if leafEntry.obj == obj {
-					return leaf
-				}
-			}
+			return leaf, i
 		}
 	}
-	return nil
+	return nil, -1
 }
 
 // condenseTree deletes underflowing nodes and propagates the changes upwards.
-func (tree *Rtree) condenseTree(n *node) {
+func (tree *Rtree) condenseTree(n *node) error {
 	deleted := []*node{}
 
 	for n != tree.root {
@@ -364,8 +360,10 @@ func (tree *Rtree) condenseTree(n *node) {
 				}
 			}
 			if len(n.parent.entries) == len(entries) {
-				// todo: don't panic
-				panic(fmt.Errorf("Failed to remove entry from parent"))
+				// This suggests the tree is malformed, as the child has a
+				// reference to a parent that is not aware of them as a child
+				// in our experience we've never seen this error occur.
+				return fmt.Errorf("Failed to remove entry from parent")
 			}
 			n.parent.entries = entries
 
@@ -385,6 +383,7 @@ func (tree *Rtree) condenseTree(n *node) {
 		e := entry{n.computeBoundingBox(), n, nil}
 		tree.insert(e, n.level+1)
 	}
+	return nil
 }
 
 // Searching
@@ -464,6 +463,16 @@ func pruneEntries(p floatgeom.Point3, entries []entry, minDists []float64) []ent
 	return pruned
 }
 
+func pruneEntriesMinDist(d float64, entries []entry, minDists []float64) []entry {
+	var i int
+	for ; i < len(entries); i++ {
+		if minDists[i] > d {
+			break
+		}
+	}
+	return entries[:i]
+}
+
 func (tree *Rtree) nearestNeighbor(p floatgeom.Point3, n *node, d float64, nearest *Space) (*Space, float64) {
 	if n.leaf {
 		for _, e := range n.entries {
@@ -488,52 +497,55 @@ func (tree *Rtree) nearestNeighbor(p floatgeom.Point3, n *node, d float64, neare
 	return nearest, d
 }
 
-// NearestNeighbors returns the k nearest neighbors in the rtree to the input point.
+// NearestNeighbors returns the k nearest neighbors in the rtree to the input point
 func (tree *Rtree) NearestNeighbors(k int, p floatgeom.Point3) []*Space {
-	dists := make([]float64, k)
-	objs := make([]*Space, k)
-	for i := 0; i < k; i++ {
-		dists[i] = math.MaxFloat64
-		objs[i] = nil
-	}
+	dists := make([]float64, 0, k)
+	objs := make([]*Space, 0, k)
 	objs, _ = tree.nearestNeighbors(k, p, tree.root, dists, objs)
 	return objs
 }
 
 // insert obj into nearest and return the first k elements in increasing order.
 func insertNearest(k int, dists []float64, nearest []*Space, dist float64, obj *Space) ([]float64, []*Space) {
-	i := 0
-	for i < k && dist >= dists[i] {
+	i := sort.SearchFloat64s(dists, dist)
+	for i < len(nearest) && dist >= dists[i] {
 		i++
 	}
 	if i >= k {
 		return dists, nearest
 	}
 
-	left, right := dists[:i], dists[i:k-1]
-	updatedDists := make([]float64, k)
-	copy(updatedDists, left)
-	updatedDists[i] = dist
-	copy(updatedDists[i+1:], right)
+	if len(nearest) < k {
+		dists = append(dists, 0)
+		nearest = append(nearest, nil)
+	}
 
-	leftObjs, rightObjs := nearest[:i], nearest[i:k-1]
-	updatedNearest := make([]*Space, k)
-	copy(updatedNearest, leftObjs)
-	updatedNearest[i] = obj
-	copy(updatedNearest[i+1:], rightObjs)
+	left, right := dists[:i], dists[i:len(dists)-1]
+	copy(dists, left)
+	copy(dists[i+1:], right)
+	dists[i] = dist
 
-	return updatedDists, updatedNearest
+	leftObjs, rightObjs := nearest[:i], nearest[i:len(nearest)-1]
+	copy(nearest, leftObjs)
+	copy(nearest[i+1:], rightObjs)
+	nearest[i] = obj
+
+	return dists, nearest
 }
 
-func (tree *Rtree) nearestNeighbors(k int, p floatgeom.Point3, n *node, dists []float64, nearest []*Space) ([]*Space, []float64) {
+func (tree *Rtree) nearestNeighbors(k int, p floatgeom.Point3, n *node,
+	dists []float64, nearest []*Space) ([]*Space, []float64) {
+
 	if n.leaf {
 		for _, e := range n.entries {
-			dist := math.Sqrt(minDist(p, e.bb))
+			dist := minDist(p, e.bb)
 			dists, nearest = insertNearest(k, dists, nearest, dist, e.obj)
 		}
 	} else {
 		branches, branchDists := sortEntries(p, n.entries)
-		branches = pruneEntries(p, branches, branchDists)
+		if l := len(dists); l >= k && l != 0 {
+			branches = pruneEntriesMinDist(dists[l-1], branches, branchDists)
+		}
 		for _, e := range branches {
 			nearest, dists = tree.nearestNeighbors(k, p, e.child, dists, nearest)
 		}

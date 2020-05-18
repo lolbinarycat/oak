@@ -11,15 +11,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oakmound/oak/oakerr"
+	"github.com/oakmound/oak/v2/oakerr"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/oakmound/oak/collision"
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/mouse"
-	"github.com/oakmound/oak/render"
-	"github.com/oakmound/oak/render/mod"
+	"github.com/oakmound/oak/v2/collision"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/mouse"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/render/mod"
 )
 
 var (
@@ -38,12 +38,51 @@ func AddCommand(s string, fn func([]string)) error {
 			Overwritten: false,
 		}
 	}
+	dlog.Info("Adding command", s)
 	commands[s] = fn
 	return nil
 }
 
 func defaultDebugConsole() {
 	debugConsole(debugResetCh, skipSceneCh, os.Stdin)
+}
+
+// ForceAddCommand adds or overwrites a console command to call fn when
+// '<s> <args>' is input to the console. fn will be called
+// with args split on whitespace. If a command is overwritten
+// the overwritten command will be returned.
+func ForceAddCommand(s string, fn func([]string)) func([]string) {
+
+	existing, overwritten := commands[s]
+	if overwritten {
+		dlog.Info("Overwriting command", s)
+	} else {
+		dlog.Info("Adding command", s)
+	}
+	commands[s] = fn
+	return existing
+}
+
+// ClearCommand clears an existing debug command by key: <s>
+func ClearCommand(s string) {
+	delete(commands, s)
+}
+
+// ResetCommands will throw out all existing debug commands from the
+// debug console.
+func ResetCommands() {
+	commands = map[string]func([]string){}
+}
+
+// GetDebugKeys returns the current debug console commands as a string array
+func GetDebugKeys() []string {
+	dkeys := make([]string, len(commands))
+	i := 0
+	for k := range commands {
+		dkeys[i] = k
+		i++
+	}
+	return dkeys
 }
 
 func debugConsole(resetCh, skipScene chan bool, input io.Reader) {
@@ -195,9 +234,7 @@ func moveWindow(in []string) {
 		}
 	}
 	err = MoveWindow(ints[0], ints[1], ints[2], ints[3])
-	if err != nil {
-		dlog.Error(err)
-	}
+	dlog.ErrorCheck(err)
 }
 
 func fullScreen(sub []string) {
@@ -208,7 +245,5 @@ func fullScreen(sub []string) {
 		}
 	}
 	err := SetFullScreen(on)
-	if err != nil {
-		dlog.Error(err)
-	}
+	dlog.ErrorCheck(err)
 }

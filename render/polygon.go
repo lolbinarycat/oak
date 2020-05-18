@@ -5,8 +5,9 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/oakmound/oak/alg/floatgeom"
-	"github.com/oakmound/oak/oakerr"
+	"github.com/200sc/go-dist/colorrange"
+	"github.com/oakmound/oak/v2/alg/floatgeom"
+	"github.com/oakmound/oak/v2/oakerr"
 )
 
 // A Polygon is a renderable that is represented by a set of in order points
@@ -32,6 +33,10 @@ func NewStrictPolygon(bounds floatgeom.Rect2, points ...floatgeom.Point2) (*Poly
 	}, nil
 }
 
+// Todo oak 3.0
+// NewPolygon(pt1, pt2, pt3 floatgeom.Point2, more ...floatgeom.Point2) (*Polygon)
+// ?
+
 // NewPolygon takes in a set of points and returns a polygon. At least three points
 // must be provided.
 func NewPolygon(points ...floatgeom.Point2) (*Polygon, error) {
@@ -46,7 +51,6 @@ func NewPolygon(points ...floatgeom.Point2) (*Polygon, error) {
 }
 
 // UpdatePoints resets the points of this polygon to be the passed in points
-// Todo 2.0: Take in a variadic set instead of a slice
 func (pg *Polygon) UpdatePoints(points ...floatgeom.Point2) error {
 	if len(points) < 3 {
 		return oakerr.InsufficientInputs{AtLeast: 3, InputName: "points"}
@@ -75,14 +79,31 @@ func (pg *Polygon) Fill(c color.Color) {
 }
 
 // GetOutline returns a set of lines of the given color along this polygon's outline
-func (pg *Polygon) GetOutline(c color.Color) *Composite {
-	sl := NewComposite()
+func (pg *Polygon) GetOutline(c color.Color) *CompositeM {
+	return pg.GetColoredOutline(IdentityColorer(c), 0)
+}
+
+// GetThickOutline returns a set of lines of the given color along this polygon's outline
+func (pg *Polygon) GetThickOutline(c color.Color, thickness int) *CompositeM {
+	return pg.GetColoredOutline(IdentityColorer(c), thickness)
+}
+
+// GetGradientOutline returns a set of lines of the given color along this polygon's outline
+func (pg *Polygon) GetGradientOutline(c1, c2 color.Color, thickness int) *CompositeM {
+	return pg.GetColoredOutline(colorrange.NewLinear(c1, c2).Percentile, thickness)
+}
+
+// GetColoredOutline returns a set of lines of the given color along this polygon's outline
+func (pg *Polygon) GetColoredOutline(colorer Colorer, thickness int) *CompositeM {
+	sl := NewCompositeM()
 	j := len(pg.points) - 1
 	for i, p2 := range pg.points {
 		p1 := pg.points[j]
 		MinX := math.Min(p1.X(), p2.X())
 		MinY := math.Min(p1.Y(), p2.Y())
-		sl.AppendOffset(NewLine(p1.X(), p1.Y(), p2.X(), p2.Y(), c), floatgeom.Point2{MinX, MinY})
+		sl.AppendOffset(
+			NewColoredLine(p1.X(), p1.Y(), p2.X(), p2.Y(), colorer, thickness),
+			floatgeom.Point2{MinX, MinY})
 		j = i
 	}
 	return sl

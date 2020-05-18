@@ -6,11 +6,11 @@ import (
 
 	"github.com/200sc/go-dist/intrange"
 
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/physics"
-	"github.com/oakmound/oak/render"
-	"github.com/oakmound/oak/timing"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/physics"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/timing"
 )
 
 const (
@@ -47,9 +47,9 @@ func (ps *Source) Init() event.CID {
 	ps.CID = CID
 	ps.pIDBlock = Allocate(ps.CID)
 	if ps.Generator.GetBaseGenerator().Duration != Inf {
-		go func(ps_p *Source, duration intrange.Range) {
+		go func(ps *Source, duration intrange.Range) {
 			timing.DoAfter(time.Duration(duration.Poll())*time.Millisecond, func() {
-				ps_p.Stop()
+				ps.Stop()
 			})
 		}(ps, ps.Generator.GetBaseGenerator().Duration)
 	}
@@ -123,6 +123,12 @@ func (ps *Source) addParticles() {
 		newParticleCount = blockSize - ps.nextPID
 	}
 
+	if pg.ParticleLimit != 0 {
+		if ps.nextPID+newParticleCount >= pg.ParticleLimit {
+			newParticleCount = pg.ParticleLimit - ps.nextPID
+		}
+	}
+
 	var p Particle
 	var bp *baseParticle
 	for i := 0; i < newParticleCount; i++ {
@@ -168,9 +174,7 @@ func (ps *Source) addParticles() {
 		ps.nextPID++
 		p.SetLayer(ps.Layer(bp.GetPos()))
 		_, err := render.Draw(p, ps.stackLevel)
-		if err != nil {
-			dlog.Error(err)
-		}
+		dlog.ErrorCheck(err)
 	}
 
 }

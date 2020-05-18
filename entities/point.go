@@ -3,7 +3,7 @@ package entities
 import (
 	"strconv"
 
-	"github.com/oakmound/oak/physics"
+	"github.com/oakmound/oak/v2/physics"
 )
 
 // A Point is a wrapper around a physics vector.
@@ -12,13 +12,18 @@ type Point struct {
 }
 
 // NewPoint returns a new point
-func NewPoint(x, y float64) Point {
-	return Point{physics.NewVector(x, y)}
+func NewPoint(x, y float64) *Point {
+	return &Point{physics.NewVector(x, y)}
 }
 
 // GetLogicPos returns the logical position of an entity. See SetLogicPos.
 func (p *Point) GetLogicPos() (float64, float64) {
 	return p.X(), p.Y()
+}
+
+// ShiftLogicPos shifts a point's underlying position by both x and y
+func (p *Point) ShiftLogicPos(x, y float64) {
+	p.Vector.SetPos(p.X()+x, p.Y()+y)
 }
 
 // SetLogicPos is an explicit declaration for setting just the logical

@@ -3,12 +3,12 @@ package main
 import (
 	"image/color"
 
-	"github.com/oakmound/oak"
-	"github.com/oakmound/oak/collision"
-	"github.com/oakmound/oak/entities"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/render"
-	"github.com/oakmound/oak/scene"
+	oak "github.com/oakmound/oak/v2"
+	"github.com/oakmound/oak/v2/collision"
+	"github.com/oakmound/oak/v2/entities"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/scene"
 )
 
 const (
@@ -129,7 +129,7 @@ func main() {
 }
 
 type AttachCollisionTest struct {
-	entities.Solid
+	*entities.Solid
 	// AttachSpace is a composable struct that allows
 	// spaces to be attached to vectors
 	collision.AttachSpace
@@ -144,9 +144,7 @@ type AttachCollisionTest struct {
 }
 
 func (act *AttachCollisionTest) Init() event.CID {
-	cid := event.NextID(act)
-	act.CID = cid
-	return cid
+	return event.NextID(act)
 }
 
 func (act *AttachCollisionTest) UpdateR() {

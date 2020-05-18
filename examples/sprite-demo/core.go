@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/oakmound/oak"
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/entities"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/render"
-	"github.com/oakmound/oak/render/mod"
-	"github.com/oakmound/oak/scene"
+	oak "github.com/oakmound/oak/v2"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/entities"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/render/mod"
+	"github.com/oakmound/oak/v2/scene"
 )
 
 const (
@@ -44,7 +44,7 @@ func main() {
 			// Compare the use of the cache against the use of a reverting type below
 			cache = render.NewSwitch("0", make(map[string]render.Modifiable))
 			for i := 0; i < 360; i++ {
-				s, err := render.LoadSprite(filepath.Join("raw", "gopher11.png"))
+				s, err := render.LoadSprite(filepath.Join("assets", "images"), filepath.Join("raw", "gopher11.png"))
 				if err != nil {
 					dlog.Error(err)
 					return
@@ -62,7 +62,7 @@ func main() {
 	)
 
 	render.SetDrawStack(
-		render.NewHeap(false),
+		render.NewCompositeR(),
 		render.NewDrawFPS(),
 		render.NewLogicFPS(),
 	)
@@ -74,17 +74,19 @@ func main() {
 	oak.Init("demo")
 }
 
+// Gopher is a basic bouncing renderable
 type Gopher struct {
-	entities.Doodad
+	*entities.Doodad
 	deltaX, deltaY float64
 	rotation       int
 }
 
+// Init sets up a gophers CID
 func (g *Gopher) Init() event.CID {
-	g.CID = event.NextID(g)
-	return g.CID
+	return event.NextID(g)
 }
 
+// NewGopher creates a gopher sprite to bounce around
 func NewGopher(layer int) {
 	goph := Gopher{}
 	goph.Doodad = entities.NewDoodad(

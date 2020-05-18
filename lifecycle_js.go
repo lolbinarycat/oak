@@ -6,12 +6,12 @@ import (
 	"image"
 	"runtime"
 
-	"github.com/oakmound/oak/collision"
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/event"
-	omouse "github.com/oakmound/oak/mouse"
-	"github.com/oakmound/oak/render"
-	"github.com/oakmound/oak/timing"
+	"github.com/oakmound/oak/v2/collision"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/event"
+	omouse "github.com/oakmound/oak/v2/mouse"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/timing"
 	"golang.org/x/exp/shiny/screen"
 )
 

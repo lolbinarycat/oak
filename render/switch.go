@@ -5,10 +5,10 @@ import (
 	"image/draw"
 	"sync"
 
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/oakerr"
-	"github.com/oakmound/oak/physics"
-	"github.com/oakmound/oak/render/mod"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/oakerr"
+	"github.com/oakmound/oak/v2/physics"
+	"github.com/oakmound/oak/v2/render/mod"
 )
 
 // The Switch type is intended for use to easily swap between multiple
@@ -36,7 +36,8 @@ func NewSwitch(start string, m map[string]Modifiable) *Switch {
 	}
 }
 
-// Add makes a new entry in the Switch's map
+// Add makes a new entry in the Switch's map. If the key already
+// existed, it will be overwritten and an error will be returned.
 func (c *Switch) Add(k string, v Modifiable) (err error) {
 	if _, ok := c.subRenderables[k]; ok {
 		err = oakerr.ExistingElement{
@@ -55,7 +56,7 @@ func (c *Switch) Add(k string, v Modifiable) (err error) {
 func (c *Switch) Set(k string) error {
 	c.lock.RLock()
 	if _, ok := c.subRenderables[k]; !ok {
-		return oakerr.InvalidInput{InputName: "k"}
+		return oakerr.NotFound{InputName: "k:" + k}
 	}
 	c.lock.RUnlock()
 	c.curRenderable = k

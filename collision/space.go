@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/oakmound/oak/alg/floatgeom"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/physics"
+	"github.com/oakmound/oak/v2/alg/floatgeom"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/physics"
 )
 
 // ID Types constant
@@ -48,12 +48,24 @@ func (s *Space) Y() float64 {
 }
 
 // GetW returns a space's width (rightmost x - leftmost x)
+// Deprecated: Use W instead
 func (s *Space) GetW() float64 {
 	return s.Location.W()
 }
 
 // GetH returns a space's height (upper y - lower y)
+// Deprecated: Use H instead
 func (s *Space) GetH() float64 {
+	return s.Location.H()
+}
+
+// W returns a space's width (rightmost x - leftmost x)
+func (s *Space) W() float64 {
+	return s.Location.W()
+}
+
+// H returns a space's height (upper y - lower y)
+func (s *Space) H() float64 {
 	return s.Location.H()
 }
 
@@ -135,7 +147,7 @@ func (s *Space) OverlapVector(other *Space) physics.Vector {
 	return physics.NewVector(xover, yover)
 }
 
-// SubtractRect removes a rectangle from this rectangle and
+// SubtractRect removes a subrectangle from this rectangle and
 // returns the rectangles remaining after the portion has been
 // removed. The input x,y is relative to the original space:
 // Example: removing 1,1 from 10,10 -> 12,12 is OK, but removing
@@ -220,6 +232,21 @@ func NewFullSpace(x, y, w, h float64, l Label, cID event.CID) *Space {
 		CID, // todo: This is hard to read as distinct from cID
 		// todo: a way to generate non-CID typed spaces that isn't
 		// package specific (see render/particle)
+	}
+}
+
+// NewRect2Space returns a space with an associated caller id from a rect2
+func NewRect2Space(rect floatgeom.Rect2, cID event.CID) *Space {
+	return NewSpace(rect.Min.X(), rect.Min.Y(), rect.W(), rect.H(), cID)
+}
+
+// NewRectSpace creates a colliison space with the specified 3D rectangle
+func NewRectSpace(rect floatgeom.Rect3, l Label, cID event.CID) *Space {
+	return &Space{
+		rect,
+		l,
+		cID,
+		CID,
 	}
 }
 

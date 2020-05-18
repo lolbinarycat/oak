@@ -10,9 +10,9 @@ import (
 	"github.com/200sc/klangsynthese/mp3"
 	"github.com/200sc/klangsynthese/wav"
 
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/fileutil"
-	"github.com/oakmound/oak/oakerr"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/fileutil"
+	"github.com/oakmound/oak/v2/oakerr"
 )
 
 // Data is an alias for an interface supporting the built in filters in our
@@ -40,7 +40,7 @@ func Get(filename string) (Data, error) {
 	if IsLoaded(filename) {
 		return loaded[filename], nil
 	}
-	return nil, oakerr.NotLoaded{}
+	return nil, oakerr.NotFound{InputName: filename}
 }
 
 // Load joins the directory and filename, attempts to find

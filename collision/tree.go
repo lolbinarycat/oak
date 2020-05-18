@@ -4,7 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/oakmound/oak/oakerr"
+	"github.com/oakmound/oak/v2/alg/floatgeom"
+	"github.com/oakmound/oak/v2/oakerr"
 )
 
 var (
@@ -22,7 +23,6 @@ var (
 type Tree struct {
 	*Rtree
 	sync.Mutex
-	minChildren, maxChildren int
 }
 
 // NewTree returns a new collision Tree. The first argument will be used
@@ -43,16 +43,14 @@ func NewTree(children ...int) (*Tree, error) {
 		return nil, errors.New("MaxChildren must exceed MinChildren")
 	}
 	return &Tree{
-		Rtree:       newTree(minChildren, maxChildren),
-		minChildren: minChildren,
-		maxChildren: maxChildren,
-		Mutex:       sync.Mutex{},
+		Rtree: newTree(minChildren, maxChildren),
+		Mutex: sync.Mutex{},
 	}, nil
 }
 
 // Clear resets a tree's contents to be empty
 func (t *Tree) Clear() {
-	t.Rtree = newTree(t.minChildren, t.maxChildren)
+	t.Rtree = newTree(t.Rtree.MinChildren, t.Rtree.MaxChildren)
 }
 
 // Add adds a set of spaces to the rtree
@@ -82,18 +80,38 @@ func (t *Tree) Remove(sps ...*Space) int {
 	return removed
 }
 
+// UpdateLabel will set the input space's label. DEPRECATED. Just set
+// the Label field on the Space pointer.
+func (t *Tree) UpdateLabel(classtype Label, s *Space) {
+	s.Label = classtype
+}
+
+// ErrNotExist is returned by methods on spaces
+// when the space to update or act on did not exist
+var ErrNotExist = errors.New("Space did not exist to update")
+
 // UpdateSpace resets a space's location to a given
 // rtreego.Rect.
 // This is not an operation on a space because
 // a space can exist in multiple rtrees.
 func (t *Tree) UpdateSpace(x, y, w, h float64, s *Space) error {
+	loc := NewRect(x, y, w, h)
+	return t.UpdateSpaceRect(loc, s)
+}
+
+// UpdateSpaceRect acts as UpdateSpace, but takes in a rectangle instead
+// of four distinct arguments.
+func (t *Tree) UpdateSpaceRect(rect floatgeom.Rect3, s *Space) error {
 	if s == nil {
 		return oakerr.NilInput{InputName: "s"}
 	}
-	loc := NewRect(x, y, w, h)
 	t.Lock()
-	t.Delete(s)
-	s.Location = loc
+	deleted := t.Delete(s)
+	if !deleted {
+		t.Unlock()
+		return ErrNotExist
+	}
+	s.Location = rect
 	t.Insert(s)
 	t.Unlock()
 	return nil
@@ -104,8 +122,8 @@ func (t *Tree) ShiftSpace(x, y float64, s *Space) error {
 	if s == nil {
 		return oakerr.NilInput{InputName: "s"}
 	}
-	x = x + s.X()
-	y = y + s.Y()
+	x += s.X()
+	y += s.Y()
 	return t.UpdateSpace(x, y, s.GetW(), s.GetH(), s)
 }
 
@@ -114,13 +132,12 @@ func (t *Tree) ShiftSpace(x, y float64, s *Space) error {
 // themselves, if they exist in the tree, but self-collision
 // will not be reported by Hits.
 func (t *Tree) Hits(sp *Space) []*Space {
-	// Eventually we'll expose SearchIntersect for use cases where you
-	// want to see if you intersect yourself
 	results := t.SearchIntersect(sp.Bounds())
 	hitSelf := -1
 	i := 0
 	for i < len(results) {
-		// Todo: figure out why we're getting nils
+		// Todo: replicate getting nils again, its not happening anymore
+		// without unexported field modification
 		if results[i] == nil {
 			results = append(results[:i], results[i+1:]...)
 		} else {

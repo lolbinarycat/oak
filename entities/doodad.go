@@ -3,8 +3,8 @@ package entities
 import (
 	"strconv"
 
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/render"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/render"
 )
 
 // A Doodad is an entity composed of a position, a renderable, and a CallerID.
@@ -19,15 +19,15 @@ type Doodad struct {
 // any other CID will assume that the struct containing this doodad has
 // already been initialized to the passed in CID.
 // This applies to ALL NewX functions in entities which take in a CID.
-func NewDoodad(x, y float64, r render.Renderable, CID event.CID) Doodad {
+func NewDoodad(x, y float64, r render.Renderable, cid event.CID) *Doodad {
 	if r != nil {
 		r.SetPos(x, y)
 	}
 	d := Doodad{}
-	d.Point = NewPoint(x, y)
+	d.Point = *NewPoint(x, y)
 	d.R = r
-	d.CID = CID.Parse(&d)
-	return d
+	d.CID = cid.Parse(&d)
+	return &d
 }
 
 // Init satisfies event.Entity
@@ -75,7 +75,9 @@ func (d *Doodad) Destroy() {
 // of vector attachement.
 func (d *Doodad) SetPos(x, y float64) {
 	d.SetLogicPos(x, y)
-	d.R.SetPos(x, y)
+	if d.R != nil {
+		d.R.SetPos(x, y)
+	}
 }
 
 func (d *Doodad) String() string {

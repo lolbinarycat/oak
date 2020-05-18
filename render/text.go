@@ -5,7 +5,7 @@ import (
 	"image/draw"
 	"strconv"
 
-	"github.com/oakmound/oak/alg"
+	"github.com/oakmound/oak/v2/alg"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -48,6 +48,19 @@ func (ss stringStringer) String() string {
 // NewStrText is a helper to take in a string instead of a stringer for NewText
 func (f *Font) NewStrText(str string, x, y float64) *Text {
 	return f.NewText(stringStringer(str), x, y)
+}
+
+type stringPtrStringer struct {
+	s *string
+}
+
+func (sp stringPtrStringer) String() string {
+	return string(*sp.s)
+}
+
+// NewStrPtrText is a helper to take in a string pointer for NewText
+func (f *Font) NewStrPtrText(str *string, x, y float64) *Text {
+	return f.NewText(stringPtrStringer{str}, x, y)
 }
 
 // DrawOffset for a text object draws the text at t.(X,Y) + (xOff,yOff)
@@ -145,10 +158,10 @@ func (t *Text) Wrap(charLimit int, vertInc float64) []*Text {
 
 // ToSprite converts this text into a sprite, so that it is no longer
 // modifiable in terms of its text content, but is modifiable in terms
-// of Modifications.
+// of mod.Transform or mod.Filter.
 func (t *Text) ToSprite() *Sprite {
 	width := t.d.MeasureString(t.text.String()).Round()
-	height := t.d.bounds.Max.Y
+	height := t.d.bounds.Max.Y()
 	s := NewEmptySprite(t.X(), t.Y()-float64(height), width, height+5)
 	t.DrawOffset(s.GetRGBA(), -t.X(), -t.Y()+float64(height))
 	return s

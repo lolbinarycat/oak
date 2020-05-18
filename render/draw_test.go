@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oakmound/oak/fileutil"
+	"github.com/oakmound/oak/v2/fileutil"
 	"github.com/stretchr/testify/assert"
 )
 
-func DrawExample() {
+func ExampleDraw() {
 	// We haven't modified the draw stack, so it contains a single draw heap.
 	// Draw a Color Box
 	Draw(NewColorBox(10, 10, color.RGBA{255, 255, 255, 255}), 3)
@@ -35,10 +35,10 @@ func TestDrawHelpers(t *testing.T) {
 	GlobalDrawStack.Push(&CompositeR{})
 	GlobalDrawStack.PreDraw()
 
-	_, err = DrawColor(color.RGBA{255, 255, 255, 255}, 0, 0, 10, 10, 0, 3)
+	_, err = DrawColor(color.RGBA{255, 255, 255, 255}, 0, 0, 10, 10, 3, 0)
 	assert.NotNil(t, err)
 
-	err = DrawForTime(NewColorBox(5, 5, color.RGBA{255, 255, 255, 255}), 4, 0)
+	err = DrawForTime(NewColorBox(5, 5, color.RGBA{255, 255, 255, 255}), 0, 4)
 	assert.NotNil(t, err)
 
 	err = DrawForTime(NewColorBox(5, 5, color.RGBA{255, 255, 255, 255}), 0, 0)

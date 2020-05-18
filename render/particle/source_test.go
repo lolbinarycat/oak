@@ -6,18 +6,20 @@ import (
 
 	"github.com/200sc/go-dist/floatrange"
 	"github.com/200sc/go-dist/intrange"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/physics"
-	"github.com/oakmound/oak/render"
-	"github.com/oakmound/oak/shape"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/physics"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/shape"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSource(t *testing.T) {
 	g := NewGradientGenerator(
 		Rotation(floatrange.Constant(1)),
-		Color(color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}),
-		Color2(color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}),
+		Color(color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255},
+			color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}),
+		Color2(color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255},
+			color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}),
 		Size(intrange.Constant(5)),
 		EndSize(intrange.Constant(10)),
 		Shape(shape.Heart),

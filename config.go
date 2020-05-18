@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/oakmound/oak/fileutil"
+	"github.com/oakmound/oak/v2/fileutil"
 
-	"github.com/oakmound/oak/dlog"
+	"github.com/oakmound/oak/v2/dlog"
 )
 
 var (
@@ -16,20 +16,36 @@ var (
 	// afterword the variable is unused.
 	SetupConfig Config
 
+	// SetupFullscreen defines whether the initial screen will start as a fullscreen
+	// window. This variable will go away when oak reaches 3.0, and it will be folded
+	// into the config struct.
+	SetupFullscreen bool
+
+	// SetupBorderless defines whether the initial screen will start as a borderless
+	// window. This variable will go away when oak reaches 3.0, and it will be folded
+	// into the config struct.
+	SetupBorderless bool
+
+	// SetupTopMost defines whether the initial screen will start on top of other
+	// windows (even when out of focus). This variable will go away when oak reaches
+	// 3.0, and it will be folded into the config struct.
+	SetupTopMost bool
+
 	// These are the default settings of a project. Anything within SetupConfig
 	// that is set to its zero value will not overwrite these settings.
 	conf = Config{
-		Assets{"assets/", "audio/", "images/", "font/"},
-		Debug{"", "ERROR"},
-		Screen{0, 0, 480, 640, 1},
-		Font{"none", 12.0, 72.0, "", "white"},
-		60,
-		60,
-		"English",
-		"Oak Window",
-		false,
-		false,
-		false,
+		Assets:              Assets{"assets/", "audio/", "images/", "font/"},
+		Debug:               Debug{"", "ERROR"},
+		Screen:              Screen{0, 0, 480, 640, 1, 0, 0},
+		Font:                Font{"none", 12.0, 72.0, "", "white"},
+		FrameRate:           60,
+		DrawFrameRate:       60,
+		Language:            "English",
+		Title:               "Oak Window",
+		BatchLoad:           false,
+		GestureSupport:      false,
+		LoadBuiltinCommands: false,
+		TrackInputChanges:   false,
 	}
 )
 
@@ -46,6 +62,7 @@ type Config struct {
 	BatchLoad           bool   `json:"batchLoad"`
 	GestureSupport      bool   `json:"gestureSupport"`
 	LoadBuiltinCommands bool   `json:"loadBuiltinCommands"`
+	TrackInputChanges   bool   `json:"trackInputChanges"`
 }
 
 // Assets is a json type storing paths to different asset folders
@@ -69,6 +86,12 @@ type Screen struct {
 	Height int `json:"height"`
 	Width  int `json:"width"`
 	Scale  int `json:"scale"`
+	// Target sets the expected dimensions of the monitor the game will be opened on, in pixels.
+	// If Fullscreen is false, then a scaling will be applied to correct the game screen size to be
+	// appropriate for the Target size. If no TargetWidth or Height is provided, scaling will not
+	// be adjusted. 
+	TargetWidth int `json:"targetHeight"`
+	TargetHeight int `json:"targetWidth"`
 }
 
 // Font is a json type storing the default font settings
@@ -136,6 +159,12 @@ func initConfScreen() {
 	if SetupConfig.Screen.Scale != 0 {
 		conf.Screen.Scale = SetupConfig.Screen.Scale
 	}
+	if SetupConfig.Screen.TargetWidth != 0 {
+		conf.Screen.TargetWidth = SetupConfig.Screen.TargetWidth
+	}
+	if SetupConfig.Screen.TargetHeight != 0 {
+		conf.Screen.TargetHeight = SetupConfig.Screen.TargetHeight
+	}
 }
 
 func initConfFont() {
@@ -185,6 +214,7 @@ func initConf() {
 	conf.BatchLoad = SetupConfig.BatchLoad
 	conf.GestureSupport = SetupConfig.GestureSupport
 	conf.LoadBuiltinCommands = SetupConfig.LoadBuiltinCommands
+	conf.TrackInputChanges = SetupConfig.TrackInputChanges
 
 	dlog.Error(conf)
 }

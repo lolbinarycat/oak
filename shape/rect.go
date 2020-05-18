@@ -1,7 +1,7 @@
 package shape
 
 import (
-	"github.com/oakmound/oak/alg/intgeom"
+	"github.com/oakmound/oak/v2/alg/intgeom"
 )
 
 // A Rect is a function that returns a 2d boolean array
@@ -37,7 +37,7 @@ func InToRect(i In) Rect {
 type StrictRect [][]bool
 
 // NewStrictRect returns a StrictRect with the given strict dimensions, all
-// values set fo false.
+// values set to false.
 func NewStrictRect(w, h int) StrictRect {
 	sh := make(StrictRect, w)
 	for x := range sh {
@@ -59,7 +59,7 @@ func (sr StrictRect) In(x, y int, sizes ...int) bool {
 }
 
 // Outline returns this StrictRect's outline, ignoring the input dimensions.
-func (sr StrictRect) Outline(sizes ...int) ([]intgeom.Point, error) {
+func (sr StrictRect) Outline(sizes ...int) ([]intgeom.Point2, error) {
 	return ToOutline(sr)(len(sr), len(sr[0]))
 }
 

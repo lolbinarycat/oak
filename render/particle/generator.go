@@ -3,7 +3,7 @@ package particle
 import (
 	"github.com/200sc/go-dist/floatrange"
 	"github.com/200sc/go-dist/intrange"
-	"github.com/oakmound/oak/physics"
+	"github.com/oakmound/oak/v2/physics"
 )
 
 var (
@@ -52,10 +52,11 @@ type BaseGenerator struct {
 	// Rotational acceleration, to change angle over time
 	Rotation floatrange.Range
 	// Gravity X() and Gravity Y() represent particle acceleration per frame.
-	Gravity    physics.Vector
-	SpeedDecay physics.Vector
-	EndFunc    func(Particle)
-	LayerFunc  func(physics.Vector) int
+	Gravity       physics.Vector
+	SpeedDecay    physics.Vector
+	EndFunc       func(Particle)
+	LayerFunc     func(physics.Vector) int
+	ParticleLimit int
 }
 
 // GetBaseGenerator returns this

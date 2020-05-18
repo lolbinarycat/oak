@@ -1,3 +1,7 @@
+// Copyright 2012 Daniel Connelly.  All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the rtree-LICENSE file.
+
 package collision
 
 import (
@@ -6,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oakmound/oak/alg/floatgeom"
+	"github.com/oakmound/oak/v2/alg/floatgeom"
 )
 
 var (
@@ -275,7 +279,7 @@ func TestAdjustTreeNoPreviousSplit(t *testing.T) {
 	r10 := entry{bb: mustRect(floatgeom.Point3{1, 0}, [3]float64{1, 1, 1}).Location}
 	entries := []entry{r00, r01, r10}
 	n := node{rt.root, false, entries, 1}
-	rt.root.entries = []entry{entry{bb: floatgeom.Point3{0, 0}.ToRect(0), child: &n}}
+	rt.root.entries = []entry{{bb: floatgeom.Point3{0, 0}.ToRect(0), child: &n}}
 
 	rt.adjustTree(&n, nil)
 
@@ -494,7 +498,7 @@ func TestFindLeaf(t *testing.T) {
 	}
 	verify(t, rt.root)
 	for _, thing := range things {
-		leaf := rt.findLeaf(rt.root, thing)
+		leaf, _ := rt.findLeaf(rt.root, thing)
 		if leaf == nil {
 			printNode(rt.root, 0)
 			t.Errorf("Unable to find leaf containing an entry after insertion!")
@@ -533,7 +537,7 @@ func TestFindLeafDoesNotExist(t *testing.T) {
 	}
 
 	obj := mustRect(floatgeom.Point3{99, 99}, [3]float64{99, 99})
-	leaf := rt.findLeaf(rt.root, obj)
+	leaf, _ := rt.findLeaf(rt.root, obj)
 	if leaf != nil {
 		t.Errorf("findLeaf failed to return nil for non-existent object")
 	}
@@ -749,9 +753,9 @@ func TestSortEntries(t *testing.T) {
 		mustRect(floatgeom.Point3{3, 3}, [3]float64{1, 1}),
 	}
 	entries := []entry{
-		entry{objs[2].Location, nil, objs[2]},
-		entry{objs[1].Location, nil, objs[1]},
-		entry{objs[0].Location, nil, objs[0]},
+		{objs[2].Location, nil, objs[2]},
+		{objs[1].Location, nil, objs[1]},
+		{objs[0].Location, nil, objs[0]},
 	}
 	sorted, dists := sortEntries(floatgeom.Point3{0, 0}, entries)
 	if sorted[0] != entries[2] || sorted[1] != entries[1] || sorted[2] != entries[0] {
@@ -806,10 +810,8 @@ func TestNearestNeighbors(t *testing.T) {
 	}
 }
 
-func BenchmarkSearchIntersect(b *testing.B) {
-	b.StopTimer()
-	rt := newTree(3, 3)
-	things := []*Space{
+func getBenchThings() []*Space {
+	return []*Space{
 		mustRect(floatgeom.Point3{0, 0, 0}, [3]float64{2, 1, 1}),
 		mustRect(floatgeom.Point3{3, 1, 0}, [3]float64{1, 2, 1}),
 		mustRect(floatgeom.Point3{1, 2, 0}, [3]float64{2, 2, 1}),
@@ -821,6 +823,12 @@ func BenchmarkSearchIntersect(b *testing.B) {
 		mustRect(floatgeom.Point3{2, 8, 0}, [3]float64{1, 2, 1}),
 		mustRect(floatgeom.Point3{3, 8, 0}, [3]float64{1, 2, 1}),
 	}
+}
+
+func BenchmarkSearchIntersect(b *testing.B) {
+	b.StopTimer()
+	rt := newTree(3, 3)
+	things := getBenchThings()
 	for _, thing := range things {
 		rt.Insert(thing)
 	}
@@ -834,18 +842,7 @@ func BenchmarkSearchIntersect(b *testing.B) {
 func BenchmarkInsert(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rt := newTree(3, 3)
-		things := []*Space{
-			mustRect(floatgeom.Point3{0, 0, 0}, [3]float64{2, 1, 1}),
-			mustRect(floatgeom.Point3{3, 1, 0}, [3]float64{1, 2, 1}),
-			mustRect(floatgeom.Point3{1, 2, 0}, [3]float64{2, 2, 1}),
-			mustRect(floatgeom.Point3{8, 6, 0}, [3]float64{1, 1, 1}),
-			mustRect(floatgeom.Point3{10, 3, 0}, [3]float64{1, 2, 1}),
-			mustRect(floatgeom.Point3{11, 7, 0}, [3]float64{1, 1, 1}),
-			mustRect(floatgeom.Point3{2, 6, 0}, [3]float64{1, 2, 1}),
-			mustRect(floatgeom.Point3{3, 6, 0}, [3]float64{1, 2, 1}),
-			mustRect(floatgeom.Point3{2, 8, 0}, [3]float64{1, 2, 1}),
-			mustRect(floatgeom.Point3{3, 8, 0}, [3]float64{1, 2, 1}),
-		}
+		things := getBenchThings()
 		for _, thing := range things {
 			rt.Insert(thing)
 		}

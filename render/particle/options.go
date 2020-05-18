@@ -3,12 +3,12 @@ package particle
 import (
 	"github.com/200sc/go-dist/floatrange"
 	"github.com/200sc/go-dist/intrange"
-	"github.com/oakmound/oak/alg"
-	"github.com/oakmound/oak/physics"
+	"github.com/oakmound/oak/v2/alg"
+	"github.com/oakmound/oak/v2/physics"
 )
 
 // And chains together particle options into a single option
-// for pre-baking option sets
+// for prebaking option sets
 func And(as ...func(Generator)) func(Generator) {
 	return func(g Generator) {
 		for _, a := range as {
@@ -35,6 +35,13 @@ func Pos(x, y float64) func(Generator) {
 func LifeSpan(ls floatrange.Range) func(Generator) {
 	return func(g Generator) {
 		g.GetBaseGenerator().LifeSpan = ls
+	}
+}
+
+// InfiniteLifeSpan will set particles to never die over time.
+func InfiniteLifeSpan() func(Generator) {
+	return func(g Generator) {
+		g.GetBaseGenerator().LifeSpan = floatrange.NewInfinite()
 	}
 }
 
@@ -98,5 +105,13 @@ func End(ef func(Particle)) func(Generator) {
 func Layer(l func(physics.Vector) int) func(Generator) {
 	return func(g Generator) {
 		g.GetBaseGenerator().LayerFunc = l
+	}
+}
+
+// Limit limits the total number of particles a particle generator can have
+// active at once.
+func Limit(limit int) func(Generator) {
+	return func(g Generator) {
+		g.GetBaseGenerator().ParticleLimit = limit
 	}
 }

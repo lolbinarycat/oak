@@ -3,13 +3,13 @@ package oak
 import (
 	"image"
 
-	"github.com/oakmound/oak/collision"
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/mouse"
-	"github.com/oakmound/oak/render"
-	"github.com/oakmound/oak/scene"
-	"github.com/oakmound/oak/timing"
+	"github.com/oakmound/oak/v2/collision"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/mouse"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/scene"
+	"github.com/oakmound/oak/v2/timing"
 )
 
 var (
@@ -34,7 +34,7 @@ var (
 
 var firstScene string
 
-func sceneLoop(first string) {
+func sceneLoop(first string, trackingInputs bool) {
 	var prevScene string
 
 	result := new(scene.Result)
@@ -62,6 +62,9 @@ func sceneLoop(first string) {
 			dlog.Error("Unknown scene", SceneMap.CurrentScene)
 			panic("Unknown scene " + SceneMap.CurrentScene)
 		}
+		if trackingInputs {
+			trackInputChanges()
+		}
 		go func() {
 			dlog.Info("Starting scene in goroutine", SceneMap.CurrentScene)
 			scen.Start(prevScene, result.NextSceneInput)
@@ -82,10 +85,7 @@ func sceneLoop(first string) {
 		dlog.Info("Looping Scene")
 		cont := true
 
-		err := logicHandler.UpdateLoop(FrameRate, sceneCh)
-		if err != nil {
-			dlog.Error(err)
-		}
+		dlog.ErrorCheck(logicHandler.UpdateLoop(FrameRate, sceneCh))
 
 		for cont {
 			select {
@@ -98,8 +98,7 @@ func sceneLoop(first string) {
 		dlog.Info("Scene End", SceneMap.CurrentScene)
 
 		// We don't want enterFrames going off between scenes
-		err = logicHandler.Stop()
-		dlog.ErrorCheck(err)
+		dlog.ErrorCheck(logicHandler.Stop())
 		prevScene = SceneMap.CurrentScene
 
 		// Send a signal to stop drawing

@@ -11,9 +11,9 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 
-	"github.com/oakmound/oak/alg/intgeom"
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/fileutil"
+	"github.com/oakmound/oak/v2/alg/intgeom"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/fileutil"
 )
 
 var (
@@ -55,7 +55,7 @@ func (fg *FontGenerator) Generate() *Font {
 		if defaultFontFile != "" {
 			fg.File = defaultFontFile
 		} else {
-			_, curFile, _, _ := runtime.Caller(1)
+			_, curFile, _, _ := runtime.Caller(0)
 			dir = filepath.Join(filepath.Dir(curFile), "default_assets", "font")
 			fg.File = "luxisr.ttf"
 		}
@@ -77,7 +77,7 @@ func (fg *FontGenerator) Generate() *Font {
 	// This logic is copied from truetype for their face scaling
 	scl := fixed.Int26_6(0.5 + (fg.Size * fg.DPI * 64 / 72))
 	bds := fnt.Bounds(scl)
-	intBds := intgeom.NewRect(
+	intBds := intgeom.NewRect2(
 		bds.Min.X.Round(),
 		bds.Min.Y.Round(),
 		bds.Max.X.Round(),
@@ -114,7 +114,7 @@ func (fg *FontGenerator) Copy() *FontGenerator {
 type Font struct {
 	FontGenerator
 	font.Drawer
-	bounds intgeom.Rect
+	bounds intgeom.Rect2
 }
 
 // Refresh regenerates this font
@@ -150,17 +150,15 @@ func SetFontDefaults(wd, assetPath, fontPath, hinting, color, file string, size,
 func parseFontHinting(hintType string) (faceHinting font.Hinting) {
 	hintType = strings.ToLower(hintType)
 	switch hintType {
-	case "none":
+	default:
+		dlog.Error("Unable to parse font hinting, ", hintType)
+		fallthrough
+	case "", "none":
 		faceHinting = font.HintingNone
 	case "vertical":
 		faceHinting = font.HintingVertical
 	case "full":
 		faceHinting = font.HintingFull
-	default:
-		dlog.Error("Unable to parse font hinting, ", hintType)
-		fallthrough
-	case "":
-		faceHinting = font.HintingNone
 	}
 	return faceHinting
 }
@@ -184,12 +182,12 @@ func LoadFont(dir string, fontFile string) *truetype.Font {
 	if _, ok := loadedFonts[fontFile]; !ok {
 		fontBytes, err := fileutil.ReadFile(filepath.Join(dir, fontFile))
 		if err != nil {
-			dlog.Error(err.Error())
+			dlog.Error(err)
 			return nil
 		}
 		font, err := truetype.Parse(fontBytes)
 		if err != nil {
-			dlog.Error(err.Error())
+			dlog.Error(err)
 			return nil
 		}
 		loadedFonts[fontFile] = font

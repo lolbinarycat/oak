@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/oakmound/oak/timing"
+	"github.com/oakmound/oak/v2/timing"
 )
 
 var (
@@ -23,6 +23,19 @@ type Handler interface {
 	Stop() error
 	Reset()
 	Trigger(event string, data interface{})
+}
+
+// A FullHandler will receive TriggerBack events from the engine
+// when sent (currently only OnStop, when the engine closes)
+type FullHandler interface {
+	Handler
+	TriggerBack(event string, data interface{}) chan bool
+}
+
+// A Pauser is a handler that can be paused.
+type Pauser interface {
+	Pause()
+	Resume()
 }
 
 // UpdateLoop is expected to internally call Update()
@@ -44,6 +57,7 @@ func (eb *Bus) UpdateLoop(framerate int, updateCh chan bool) error {
 	eb.framesElapsed = 0
 	eb.doneCh = ch
 	eb.updateCh = updateCh
+	eb.framerate = framerate
 	go eb.ResolvePending()
 	go func(doneCh chan bool) {
 		eb.Ticker = timing.NewDynamicTicker()
@@ -107,6 +121,16 @@ func (eb *Bus) Stop() error {
 	}
 	<-eb.doneCh
 	return nil
+}
+
+// Pause stops the event bus from running any further enter events
+func (eb *Bus) Pause() {
+	eb.Ticker.SetTick(math.MaxInt32 * time.Second)
+}
+
+// Resume will resume emitting enter events
+func (eb *Bus) Resume() {
+	eb.Ticker.SetTick(timing.FPSToDuration(eb.framerate))
 }
 
 // FramesElapsed returns how many frames have elapsed since UpdateLoop was last called.

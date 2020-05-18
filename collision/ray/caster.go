@@ -3,8 +3,8 @@ package ray
 import (
 	"math"
 
-	"github.com/oakmound/oak/alg/floatgeom"
-	"github.com/oakmound/oak/collision"
+	"github.com/oakmound/oak/v2/alg/floatgeom"
+	"github.com/oakmound/oak/v2/collision"
 )
 
 var (
@@ -17,6 +17,7 @@ var (
 		// there isn't a reasonable default.
 		// Consider: Cast() could take in distance as well.
 		CastDistance: 200,
+		Tree:         collision.DefTree,
 	}
 )
 
@@ -58,7 +59,7 @@ func NewCaster(opts ...CastOption) *Caster {
 
 // CastTo casts a ray from origin to target, and otherwise acts as Cast.
 func (c *Caster) CastTo(origin, target floatgeom.Point2) []collision.Point {
-	return c.Cast(origin, floatgeom.AnglePoint(origin.AngleTo(target)))
+	return c.Cast(origin, floatgeom.AnglePoint(target.AngleTo(origin)))
 }
 
 // Cast creates a ray from origin pointing at the given angle and returns
@@ -115,6 +116,16 @@ func (c *Caster) Copy() *Caster {
 	return c2
 }
 
+// Cast calls DefaultCaster.Cast. See (*Caster).Cast
+func Cast(origin, angle floatgeom.Point2) []collision.Point {
+	return DefaultCaster.Cast(origin, angle)
+}
+
+// CastTo calls DefaultCaster.CastTo. See (*Caster).CastTo
+func CastTo(origin, target floatgeom.Point2) []collision.Point {
+	return DefaultCaster.CastTo(origin, target)
+}
+
 // Tree sets the collision tree of a Caster.
 func Tree(t *collision.Tree) CastOption {
 	return func(c *Caster) {
@@ -128,5 +139,26 @@ func Tree(t *collision.Tree) CastOption {
 func CenterPoints(on bool) CastOption {
 	return func(c *Caster) {
 		c.CenterPoints = on
+	}
+}
+
+// Distance determines how far a caster will project rays before stopping
+func Distance(dist float64) CastOption {
+	return func(c *Caster) {
+		c.CastDistance = dist
+	}
+}
+
+// PointSize determines the size of a caster's collision checks
+func PointSize(ps floatgeom.Point2) CastOption {
+	return func(c *Caster) {
+		c.PointSize = ps
+	}
+}
+
+// PointSpan determines the distance between collision check points
+func PointSpan(span float64) CastOption {
+	return func(c *Caster) {
+		c.PointSpan = span
 	}
 }

@@ -2,9 +2,10 @@ package render
 
 import (
 	"image"
+	"image/color"
 	"image/draw"
 
-	"github.com/oakmound/oak/render/mod"
+	"github.com/oakmound/oak/v2/render/mod"
 )
 
 // A Sprite is a basic wrapper around image data and a point. The most basic Renderable.
@@ -41,12 +42,35 @@ func (s *Sprite) GetDims() (int, int) {
 	if s.r == nil {
 		return 6, 6
 	}
-	return s.r.Bounds().Max.X, s.r.Bounds().Max.Y
+	bds := s.r.Bounds()
+	return bds.Max.X, bds.Max.Y
 }
 
 // SetRGBA will replace the rgba behind this sprite
 func (s *Sprite) SetRGBA(r *image.RGBA) {
 	s.r = r
+}
+
+// Bounds is an alternative to GetDims that alows a sprite
+// to satisfy draw.Image.
+func (s *Sprite) Bounds() image.Rectangle {
+	return s.r.Bounds()
+}
+
+// ColorModel allows sprites to satisfy draw.Image. Returns
+// color.RGBA.
+func (s *Sprite) ColorModel() color.Model {
+	return s.r.ColorModel()
+}
+
+// At returns the color of a given pixel location
+func (s *Sprite) At(x, y int) color.Color {
+	return s.r.At(x, y)
+}
+
+// Set sets a color of a given pixel location
+func (s *Sprite) Set(x, y int, c color.Color) {
+	s.r.Set(x, y, c)
 }
 
 // DrawOffset draws this sprite at +xOff, +yOff
@@ -63,11 +87,19 @@ func (s *Sprite) Draw(buff draw.Image) {
 func (s *Sprite) Copy() Modifiable {
 	newS := new(Sprite)
 	if s.r != nil {
-		newS.r = new(image.RGBA)
-		*newS.r = *s.r
+		newS.r = rgbaCopy(s.r)
 	}
 	newS.LayeredPoint = s.LayeredPoint.Copy()
 	return newS
+}
+
+func rgbaCopy(r *image.RGBA) *image.RGBA {
+	newRgba := new(image.RGBA)
+	newRgba.Rect = r.Rect
+	newRgba.Stride = r.Stride
+	newRgba.Pix = make([]uint8, len(r.Pix))
+	copy(newRgba.Pix, r.Pix)
+	return newRgba
 }
 
 // IsNil returns whether or not this sprite's rgba is nil.

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oakmound/oak/collision"
-	"github.com/oakmound/oak/event"
+	"github.com/oakmound/oak/v2/collision"
+	"github.com/oakmound/oak/v2/event"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/mobile/event/mouse"
@@ -24,7 +24,7 @@ func TestMouseClicks(t *testing.T) {
 	DefTree.Add(sp)
 	Propagate(PressOn, NewEvent(5, 5, "LeftMouse", PressOn))
 	Propagate(ReleaseOn, NewEvent(5, 5, "LeftMouse", ReleaseOn))
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 	assert.True(t, triggered)
 }
 

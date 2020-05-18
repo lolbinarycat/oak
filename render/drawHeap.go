@@ -14,12 +14,15 @@ type RenderableHeap struct {
 	toPush  []Renderable
 	static  bool
 	addLock sync.RWMutex
+	DrawPolygon
 }
 
 // NewHeap creates a new renderableHeap. The static boolean represents whether
 // this heap exists relative to the viewport or not-- if true, an element at 40,40
 // will always be at 40,40. If false, when the viewport moves, the element will
 // move opposite the direction of the viewport.
+//
+// Deprecated: Use NewStaticHeap or NewDynamicHeap instead
 func NewHeap(static bool) *RenderableHeap {
 	rh := new(RenderableHeap)
 	rh.rs = make([]Renderable, 0)
@@ -27,6 +30,27 @@ func NewHeap(static bool) *RenderableHeap {
 	rh.static = static
 	rh.addLock = sync.RWMutex{}
 	return rh
+}
+
+// NewDynamicHeap creates a renderable heap for drawing renderables by layer
+// where the position of the viewport is taken into account to produce the drawn
+// location of the renderable.
+//
+// Example:
+// If drawing a Sprite at (100,100) with the viewport at (50,0), the sprite will
+// appear at (50, 100).
+func NewDynamicHeap() *RenderableHeap {
+	return NewHeap(false)
+}
+
+// NewStaticHeap creates a renderable heap for drawing renderables by layer
+// where the position of renderable is absolute with regards to the viewport.
+//
+// Example:
+// If drawing a Sprite at (100,100) with the viewport at (50,0), the sprite will
+// appear at (100, 100).
+func NewStaticHeap() *RenderableHeap {
+	return NewHeap(true)
 }
 
 //Add stages a new Renderable to add to the heap
@@ -119,7 +143,7 @@ func (rh *RenderableHeap) draw(world draw.Image, viewPos image.Point, screenW, s
 					y := h + y2
 					if x > viewPos.X && y > viewPos.Y &&
 						x2 < viewPos.X+screenW && y2 < viewPos.Y+screenH {
-						if InDrawPolygon(x, y, x2, y2) {
+						if rh.InDrawPolygon(x, y, x2, y2) {
 							r.DrawOffset(world, vx, vy)
 						}
 					}

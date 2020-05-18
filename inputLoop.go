@@ -1,12 +1,11 @@
 package oak
 
 import (
-	"runtime"
+	"github.com/oakmound/oak/v2/event"
 
-	"github.com/oakmound/oak/dlog"
-	okey "github.com/oakmound/oak/key"
-	omouse "github.com/oakmound/oak/mouse"
-	"github.com/oakmound/oak/physics"
+	"github.com/oakmound/oak/v2/dlog"
+	okey "github.com/oakmound/oak/v2/key"
+	omouse "github.com/oakmound/oak/v2/mouse"
 	"github.com/oakmound/shiny/gesture"
 	"golang.org/x/mobile/event/key"
 	"golang.org/x/mobile/event/lifecycle"
@@ -21,17 +20,8 @@ var (
 
 func inputLoop() {
 	inputLoopInit()
-	schedCt := 0
 	for {
 		inputLoopSwitch()
-		// This loop can be tight enough that the go scheduler never gets
-		// a chance to take control from this thread. This is a hack that
-		// solves that.
-		schedCt++
-		if schedCt > 100 {
-			schedCt = 0
-			runtime.Gosched()
-		}
 	}
 }
 
@@ -50,11 +40,21 @@ func inputLoopInit() {
 
 func inputLoopSwitch() {
 	switch e := eventFn().(type) {
+	// We only currently respond to death lifecycle events.
 	case lifecycle.Event:
 		if e.To == lifecycle.StageDead {
+			dlog.Info("Window closed.")
+			// OnStop needs to be sent through TriggerBack, otherwise the
+			// program will close before the stop events get propagated.
+			if fh, ok := logicHandler.(event.FullHandler); ok {
+				dlog.Verb("Triggering OnStop.")
+				<-fh.TriggerBack(event.OnStop, nil)
+			}
 			quitCh <- true
 			return
 		}
+		// ... this is where we would respond to window focus events
+
 	// Send key events
 	//
 	// Key events have two varieties:
@@ -65,14 +65,18 @@ func inputLoopSwitch() {
 	case key.Event:
 		// key.Code strings all begin with "Code". This strips that off.
 		k := GetKeyBind(e.Code.String()[4:])
-		if e.Direction == key.DirPress {
+		switch e.Direction {
+		case key.DirPress:
 			setDown(k)
 			logicHandler.Trigger(okey.Down, k)
 			logicHandler.Trigger(okey.Down+k, nil)
-		} else if e.Direction == key.DirRelease {
+		case key.DirRelease:
 			setUp(k)
 			logicHandler.Trigger(okey.Up, k)
 			logicHandler.Trigger(okey.Up+k, nil)
+		default:
+			logicHandler.Trigger(okey.Held, k)
+			logicHandler.Trigger(okey.Held+k, nil)
 		}
 
 	// Send mouse events
@@ -103,12 +107,12 @@ func inputLoopSwitch() {
 		// Todo: consider incorporating viewport into the event, see the
 		// workaround needed in mouseDetails, and how mouse events might not
 		// propagate to their expected position.
-		mevent := omouse.Event{
-			Vector: physics.NewVector32((((e.X - float32(windowRect.Min.X)) / float32(windowRect.Max.X-windowRect.Min.X)) * float32(ScreenWidth)),
-				(((e.Y - float32(windowRect.Min.Y)) / float32(windowRect.Max.Y-windowRect.Min.Y)) * float32(ScreenHeight))),
-			Button: button,
-			Event:  eventName,
-		}
+		mevent := omouse.NewEvent(
+			float64((((e.X - float32(windowRect.Min.X)) / float32(windowRect.Max.X-windowRect.Min.X)) * float32(ScreenWidth))),
+			float64((((e.Y - float32(windowRect.Min.Y)) / float32(windowRect.Max.Y-windowRect.Min.Y)) * float32(ScreenHeight))),
+			button,
+			eventName,
+		)
 
 		omouse.Propagate(eventName+"On", mevent)
 		logicHandler.Trigger(eventName, mevent)

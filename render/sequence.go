@@ -5,9 +5,9 @@ import (
 	"image/draw"
 	"time"
 
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/render/mod"
-	"github.com/oakmound/oak/timing"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/render/mod"
+	"github.com/oakmound/oak/v2/timing"
 )
 
 // A Sequence is a series of modifiables drawn as an animation. It is more
@@ -24,7 +24,7 @@ type Sequence struct {
 }
 
 // NewSequence returns a new sequence from the input modifiables, playing at
-// fps rate
+// the given fps rate.
 func NewSequence(fps float64, mods ...Modifiable) *Sequence {
 	return &Sequence{
 		LayeredPoint: NewLayeredPoint(0, 0, 0),
@@ -39,6 +39,17 @@ func NewSequence(fps float64, mods ...Modifiable) *Sequence {
 		rs:         mods,
 		lastChange: time.Now(),
 	}
+}
+
+// SetFPS sets the number of frames that should advance per second to be
+// the input fps
+func (sq *Sequence) SetFPS(fps float64) {
+	sq.frameTime = timing.FPSToNano(fps)
+}
+
+// GetDims of a Sequence returns the dims of the current Renderable for the sequence
+func (sq *Sequence) GetDims() (int, int) {
+	return sq.rs[sq.sheetPos].GetDims()
 }
 
 // Copy copies each modifiable inside this sequence in order to produce a new

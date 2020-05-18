@@ -1,8 +1,8 @@
 package render
 
 import (
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/render/mod"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/render/mod"
 )
 
 // The Reverting structure lets modifications be made to a Modifiable and then
@@ -61,6 +61,24 @@ func (rv *Reverting) RevertAndModify(n int, ms ...mod.Mod) Modifiable {
 	return rv
 }
 
+// RevertAndFilter acts as RevertAndModify, but with Filters.
+func (rv *Reverting) RevertAndFilter(n int, fs ...mod.Filter) Modifiable {
+	x := rv.X()
+	y := rv.Y()
+	if n >= len(rv.rs) {
+		n = len(rv.rs) - 1
+	}
+	if n > 0 {
+		rv.rs = rv.rs[:len(rv.rs)-n]
+	}
+	add := rv.rs[len(rv.rs)-1].Copy()
+	add.Filter(fs...)
+	rv.rs = append(rv.rs, add)
+	rv.Modifiable = rv.rs[len(rv.rs)-1]
+	rv.SetPos(x, y)
+	return rv
+}
+
 // Modify alters this reverting by the given modifications, appending the new
 // modified renderable to it's list of modified versions and displaying it.
 func (rv *Reverting) Modify(ms ...mod.Mod) Modifiable {
@@ -68,6 +86,15 @@ func (rv *Reverting) Modify(ms ...mod.Mod) Modifiable {
 	rv.rs = append(rv.rs, next)
 	rv.Modifiable = rv.rs[len(rv.rs)-1]
 	return rv
+}
+
+// Filter alters this reverting by the given filters, appending the new
+// modified renderable to it's list of modified versions and displaying it.
+func (rv *Reverting) Filter(ms ...mod.Filter) {
+	next := rv.Modifiable.Copy()
+	next.Filter(ms...)
+	rv.rs = append(rv.rs, next)
+	rv.Modifiable = rv.rs[len(rv.rs)-1]
 }
 
 // Copy returns a copy of this Reverting
@@ -137,7 +164,17 @@ func (rv *Reverting) IsStatic() bool {
 	return true
 }
 
-// Set calls Set on underlying types below this Reverting that cat be Set
+// Get calls Get on the active renderable below this Reverting. If nothing has a Get
+// method, it returns the empty string.
+func (rv *Reverting) Get() string {
+	switch t := rv.rs[0].(type) {
+	case *Switch:
+		return t.Get()
+	}
+	return ""
+}
+
+// Set calls Set on underlying types below this Reverting that can be Set
 // Todo: if Set becomes used by more types, this should use an interface like
 // CanPause
 func (rv *Reverting) Set(k string) error {

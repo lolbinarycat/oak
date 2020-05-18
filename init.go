@@ -4,19 +4,13 @@ import (
 	"image"
 	"path/filepath"
 
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/fileutil"
-	"github.com/oakmound/oak/render"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/fileutil"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/shiny/driver"
 )
 
 var (
-
-	// The init channel communicates between
-	// initializing goroutines for when significant
-	// steps in initialization have been reached
-	// initCh = make(chan bool)
-	// currently unused
-
 	//
 	transitionCh = make(chan bool)
 
@@ -47,6 +41,10 @@ var (
 	// viewport positions should be drawn
 	viewportCh = make(chan [2]int)
 
+	// The viewport shift channel controls when new
+	// viewport positions should be shifted to and drawn
+	viewportShiftCh = make(chan [2]int)
+
 	debugResetInProgress bool
 
 	// ScreenWidth is the width of the screen
@@ -76,16 +74,22 @@ func Init(firstScene string) {
 
 	initConf()
 
+	if conf.Screen.TargetWidth != 0 && conf.Screen.TargetHeight != 0 {
+		w, h := driver.MonitorSize()
+		if w != 0 || h != 0 {
+			// Todo: Modify conf.Screen.Scale
+		}
+	}
+
 	// Set variables from conf file
 	lvl, err := dlog.ParseDebugLevel(conf.Debug.Level)
 	dlog.SetDebugLevel(lvl)
 	// We are intentionally using the lvl value before checking error,
 	// because we can only log errors through dlog itself anyway
-	if err != nil {
-		// We do this knowing that the default debug level when SetDebugLevel fails
-		// is ERROR, so this will be recorded.
-		dlog.Error(err)
-	}
+
+	// We do this knowing that the default debug level when SetDebugLevel fails
+	// is ERROR, so this will be recorded.
+	dlog.ErrorCheck(err)
 	dlog.SetDebugFilter(conf.Debug.Filter)
 
 	dlog.Info("Oak Init Start")
@@ -101,6 +105,10 @@ func Init(firstScene string) {
 	render.SetFontDefaults(wd, conf.Assets.AssetPath, conf.Assets.FontPath,
 		conf.Font.Hinting, conf.Font.Color, conf.Font.File, conf.Font.Size,
 		conf.Font.DPI)
+
+	if conf.TrackInputChanges {
+		trackJoystickChanges()
+	}
 	// END of loading variables from configuration
 
 	SeedRNG(DefaultSeed)

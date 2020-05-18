@@ -3,19 +3,21 @@ package main
 import (
 	"image/color"
 	"math/rand"
+	"path/filepath"
 	"time"
 
-	"github.com/oakmound/oak/collision"
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/oak/entities"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/physics"
-	"github.com/oakmound/oak/render"
-	"github.com/oakmound/oak/scene"
+	"github.com/oakmound/oak/v2/collision"
+	"github.com/oakmound/oak/v2/dlog"
+	"github.com/oakmound/oak/v2/entities"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/physics"
+	"github.com/oakmound/oak/v2/render"
+	"github.com/oakmound/oak/v2/scene"
 
-	"github.com/oakmound/oak"
+	oak "github.com/oakmound/oak/v2"
 )
 
+// Cliffracer globals... If this was more complex we wouldnt have these
 var (
 	Font              *render.Font
 	text              *render.Text
@@ -26,24 +28,26 @@ var (
 	end               = make(chan bool)
 )
 
+// Cliffracing labels
 const (
 	NONE = iota
 	CLIFFRACER
 )
 
+// CliffRacer just implements moving
 type CliffRacer struct {
-	entities.Moving
+	*entities.Moving
 }
 
+//Init sets up the cliffracer
 func (cr *CliffRacer) Init() event.CID {
-	cid := event.NextID(cr)
-	cr.CID = cid
-	return cid
+	return event.NextID(cr)
 }
 
+// NewCliffRacer creates a new cliffracer
 func NewCliffRacer(y float64) *CliffRacer {
 	cr := new(CliffRacer)
-	sp, err := render.LoadSprite("raw/cliffracer.png")
+	sp, err := render.LoadSprite(filepath.Join("assets", "images"), filepath.Join("raw", "cliffracer.png"))
 	if err != nil {
 		dlog.Error(err)
 		return nil
@@ -71,16 +75,17 @@ func moveCliffRacer(id int, nothing interface{}) int {
 	return 0
 }
 
+// Player creates the player who dodges cliffracers
 type Player struct {
-	entities.Solid
+	*entities.Solid
 }
 
+// Init sets up the Player
 func (p *Player) Init() event.CID {
-	cid := event.NextID(p)
-	p.CID = cid
-	return cid
+	return event.NextID(p)
 }
 
+// NewPlayer creates a new player
 func NewPlayer() {
 	p := new(Player)
 	p.Solid = entities.NewSolid(50, 100, 10, 10, render.NewColorBox(10, 10, color.RGBA{255, 0, 0, 255}), nil, p.Init())
@@ -124,7 +129,7 @@ func main() {
 	oak.Add("cliffRacers",
 		func(prevScene string, data interface{}) {
 			playerAlive = true
-			bkg, err := render.LoadSprite("raw/background.png")
+			bkg, err := render.LoadSprite(filepath.Join("assets", "images"), filepath.Join("raw", "background.png"))
 			if err != nil {
 				dlog.Error(err)
 				return

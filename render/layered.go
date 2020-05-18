@@ -1,7 +1,7 @@
 package render
 
 import (
-	"github.com/oakmound/oak/physics"
+	"github.com/oakmound/oak/v2/physics"
 )
 
 const (
@@ -29,6 +29,11 @@ type Layered interface {
 //A Layer object has a draw layer
 type Layer struct {
 	layer int
+}
+
+// NewLayer returns a wrapper around a draw layer integer
+func NewLayer(layer int) Layer {
+	return Layer{layer}
 }
 
 //GetLayer returns the layer of an object if it has one or else returns that the object needs to be undrawn

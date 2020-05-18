@@ -1,10 +1,10 @@
 package entities
 
 import (
-	"github.com/oakmound/oak/collision"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/physics"
-	"github.com/oakmound/oak/render"
+	"github.com/oakmound/oak/v2/collision"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/physics"
+	"github.com/oakmound/oak/v2/render"
 )
 
 // A Moving is a Solid that also keeps track of a speed and a delta vector
@@ -14,16 +14,16 @@ type Moving struct {
 }
 
 // NewMoving returns a new Moving
-func NewMoving(x, y, w, h float64, r render.Renderable, tree *collision.Tree, cid event.CID, friction float64) Moving {
+func NewMoving(x, y, w, h float64, r render.Renderable, tree *collision.Tree, cid event.CID, friction float64) *Moving {
 	m := Moving{}
 	cid = cid.Parse(&m)
-	m.Solid = NewSolid(x, y, w, h, r, tree, cid)
+	m.Solid = *NewSolid(x, y, w, h, r, tree, cid)
 	m.vMoving = vMoving{
 		Delta:    physics.NewVector(0, 0),
 		Speed:    physics.NewVector(0, 0),
 		Friction: friction,
 	}
-	return m
+	return &m
 }
 
 // Init satisfies event.Entity
@@ -64,4 +64,9 @@ type vMoving struct {
 // GetDelta returns this moving's delta
 func (v vMoving) GetDelta() physics.Vector {
 	return v.Delta
+}
+
+// GetSpeed returns this moving's speed
+func (v vMoving) GetSpeed() physics.Vector {
+	return v.Speed
 }

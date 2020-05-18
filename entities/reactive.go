@@ -3,9 +3,9 @@ package entities
 import (
 	"strconv"
 
-	"github.com/oakmound/oak/collision"
-	"github.com/oakmound/oak/event"
-	"github.com/oakmound/oak/render"
+	"github.com/oakmound/oak/v2/collision"
+	"github.com/oakmound/oak/v2/event"
+	"github.com/oakmound/oak/v2/render"
 )
 
 // Reactive is parallel to Solid, but has a Reactive collision space instead of
@@ -19,10 +19,10 @@ type Reactive struct {
 
 // NewReactive returns a new Reactive struct. The added space will
 // be added to the input tree, or DefTree if none is given.
-func NewReactive(x, y, w, h float64, r render.Renderable, tree *collision.Tree, cid event.CID) Reactive {
+func NewReactive(x, y, w, h float64, r render.Renderable, tree *collision.Tree, cid event.CID) *Reactive {
 	rct := Reactive{}
 	cid = cid.Parse(&rct)
-	rct.Doodad = NewDoodad(x, y, r, cid)
+	rct.Doodad = *NewDoodad(x, y, r, cid)
 	rct.W = w
 	rct.H = h
 	rct.RSpace = collision.NewEmptyReactiveSpace(collision.NewSpace(x, y, w, h, cid))
@@ -31,7 +31,7 @@ func NewReactive(x, y, w, h float64, r render.Renderable, tree *collision.Tree, 
 	}
 	rct.Tree = tree
 	rct.Tree.Add(rct.RSpace.Space)
-	return rct
+	return &rct
 }
 
 // SetDim sets the dimensions of this reactive's space and it's logical dimensions
@@ -66,6 +66,11 @@ func (r *Reactive) GetSpace() *collision.Space {
 	return r.RSpace.Space
 }
 
+// GetReactiveSpace returns this reactive's RSpace
+func (r *Reactive) GetReactiveSpace() *collision.ReactiveSpace {
+	return r.RSpace
+}
+
 // Overwrites
 
 // Init satisfies event.Entity
@@ -82,15 +87,17 @@ func (r *Reactive) ShiftPos(x, y float64) {
 // SetPos sets this reactive's logical, renderable, and collision position to be x,y
 func (r *Reactive) SetPos(x, y float64) {
 	r.SetLogicPos(x, y)
-	r.R.SetPos(x, y)
+	if r.R != nil {
+		r.R.SetPos(x, y)
+	}
 	r.Tree.UpdateSpace(r.X(), r.Y(), r.W, r.H, r.RSpace.Space)
 }
 
 // Destroy destroys this reactive's doodad component and removes its space
 // from it's collision tree
 func (r *Reactive) Destroy() {
-	r.Doodad.Destroy()
 	r.Tree.Remove(r.RSpace.Space)
+	r.Doodad.Destroy()
 }
 
 func (r *Reactive) String() string {

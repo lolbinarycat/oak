@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/oakmound/oak/physics"
+	"github.com/oakmound/oak/v2/physics"
 )
 
 // A ScrollBox is a renderable that draws other renderables to itself in a scrolling fashion,
@@ -115,10 +115,12 @@ func (s *ScrollBox) Unpause() {
 func (s *ScrollBox) SetReappearPos(x, y float64) error {
 	s.reappear = physics.NewVector(x, y)
 	if x*s.dirX > 0 {
-		return errors.New("ScrollBox will not loop with direction.X: " + strconv.Itoa(int(s.dirX)) + " and reappear.X: " + strconv.Itoa(int(x)))
+		return errors.New("ScrollBox will not loop with direction.X: " +
+			strconv.Itoa(int(s.dirX)) + " and reappear.X: " + strconv.Itoa(int(x)))
 	}
 	if y*s.dirY > 0 {
-		return errors.New("ScrollBox will not loop with direction.Y: " + strconv.Itoa(int(s.dirY)) + " and reappear.X: " + strconv.Itoa(int(y)))
+		return errors.New("ScrollBox will not loop with direction.Y: " +
+			strconv.Itoa(int(s.dirY)) + " and reappear.X: " + strconv.Itoa(int(y)))
 	}
 	return nil
 }

@@ -3,7 +3,7 @@ package shape
 import (
 	"math"
 
-	"github.com/oakmound/oak/alg/intgeom"
+	"github.com/oakmound/oak/v2/alg/intgeom"
 )
 
 // In functions return whether the given coordinate lies
@@ -38,7 +38,7 @@ func OrIn(is ...In) In {
 	}
 }
 
-// NotIn returns the opposite of a given In function for any query
+// NotIn returns the opposite of a given In function for any query.
 func NotIn(i In) In {
 	return func(x, y int, sizes ...int) bool {
 		return !i(x, y, sizes...)
@@ -59,8 +59,8 @@ func (ji JustIn) Rect(sizes ...int) [][]bool {
 	return InToRect(In(ji))(sizes...)
 }
 
-// Outline calls ToOutline on the JustIn
-func (ji JustIn) Outline(sizes ...int) ([]intgeom.Point, error) {
+// Outline calls ToOutline on a JustIn
+func (ji JustIn) Outline(sizes ...int) ([]intgeom.Point2, error) {
 	return ToOutline(ji)(sizes...)
 }
 

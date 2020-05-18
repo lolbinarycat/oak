@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oakmound/oak/fileutil"
-	"github.com/oakmound/oak/render/internal/testdata/fonts"
+	"github.com/oakmound/oak/v2/fileutil"
+	"github.com/oakmound/oak/v2/render/testdata/fonts"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,6 +26,7 @@ func TestTextFns(t *testing.T) {
 
 	txt.SetString("Test2")
 	assert.Equal(t, "Test2", txt.text.String())
+	assert.Equal(t, "Test2", txt.StringLiteral())
 
 	n := 100
 	txt.SetIntP(&n)
