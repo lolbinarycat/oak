@@ -19,12 +19,14 @@ type Logger interface {
 // to the an instance of the private logger type
 var oakLogger Logger
 
-// ErrorCheck checks that the input is not nil, then calls Error on it if it is
-// not. Otherwise it does nothing.
-func ErrorCheck(in error) {
+// ErrorCheck checks that the input is not nil, then calls Error on it and returns true if it is
+// not. Otherwise it does nothing but return false.
+func ErrorCheck(in error) bool {
 	if in != nil {
 		Error(in)
+		return true
 	}
+	return false
 }
 
 // Error will write a log if the debug level is not NONE
