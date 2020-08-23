@@ -1,6 +1,11 @@
 package timing
 
-import "time"
+
+import (
+	"context"
+	"time"
+)
+
 
 var (
 	// ClearDelayCh is used to stop all ongoing delays
@@ -16,3 +21,16 @@ func DoAfter(d time.Duration, f func()) {
 	case <-ClearDelayCh:
 	}
 }
+
+
+
+// DoAfterContext executes the function if the context is completed.
+// Clears out if the Delay Channel is cleared.
+func DoAfterContext(ctx context.Context, f func()) {
+	select {
+	case <-ctx.Done():
+		f()
+	case <-ClearDelayCh:
+	}
+}
+
