@@ -23,7 +23,7 @@ var oakLogger Logger
 // not. Otherwise it does nothing.
 // Emits the input error as is for additional processing if desired.
 func ErrorCheck(in error) error {
-
+	if in != nil {
 		Error(in)
 	}
 	return in
