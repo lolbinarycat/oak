@@ -90,5 +90,3 @@ func (l regexpLogger) logCond(in []interface{},lvl Level) {
 		l.logger.dLog(true, true, in)
 	}
 }
-
-
