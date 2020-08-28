@@ -1,4 +1,4 @@
-module github.com/lolbinarycat/oak/v2
+module github.com/oakmound/oak/v2
 
 require (
 	github.com/200sc/go-dist v1.0.0
@@ -25,5 +25,3 @@ require (
 )
 
 go 1.13
-
-replace github.com/oakmound/oak/v2 => github.com/lolbinarycat/oak/v2 v2.3.3
